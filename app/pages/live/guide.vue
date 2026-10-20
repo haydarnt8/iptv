@@ -146,12 +146,12 @@ function openProgramme(programme: EpgProgramme, channel: LiveStream) {
           ref="grid"
           :channels="filteredItems"
           :playing-id="selectedChannel?.streamId ?? null"
-          class="h-[calc(100dvh-13rem)] md:h-[calc(100dvh-9.5rem)]"
+          class="h-[calc(100dvh-14.5rem-var(--safe-top)-var(--safe-bottom))] md:h-[calc(100dvh-10rem-var(--safe-top))]"
           @play="watchChannel"
           @open="openProgramme"
         />
         <template #fallback>
-          <USkeleton class="h-[calc(100dvh-13rem)] w-full md:h-[calc(100dvh-9.5rem)]" />
+          <USkeleton class="h-[calc(100dvh-14.5rem-var(--safe-top)-var(--safe-bottom))] w-full rounded-2xl md:h-[calc(100dvh-10rem-var(--safe-top))]" />
         </template>
       </ClientOnly>
     </template>

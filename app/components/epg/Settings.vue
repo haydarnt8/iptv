@@ -118,6 +118,18 @@ const coverage = computed(() => {
   return Math.round((value.matchedChannels / value.totalChannels) * 100)
 })
 
+const statusLine = computed(() => {
+  const value = status.value
+  if (!value) return null
+  if (value.state === 'building') return 'Downloading and matching guides… large guides can take a minute.'
+  if (value.state === 'never') return 'The guide hasn\'t been built yet.'
+  if (value.builtAt) {
+    const builtAt = Date.parse(value.builtAt)
+    return `Updated ${formatDay(builtAt)} at ${formatClock(builtAt)} · refreshes every 12 hours`
+  }
+  return null
+})
+
 function describeSource(source: EpgSourceStatus | null): string {
   if (!source) return 'Not loaded yet.'
   if (!source.ok) return source.error ?? 'Failed to load.'
@@ -129,113 +141,87 @@ onBeforeUnmount(stopPolling)
 </script>
 
 <template>
-  <UCard>
-    <template #header>
-      <div class="flex items-start justify-between gap-3">
-        <div>
-          <h2 class="font-semibold">
-            TV guide (EPG)
-          </h2>
-          <p class="text-sm text-muted">
-            Shows what's on now and next in Live TV. Your provider's own guide is always used; add XMLTV guide
-            sources to fill in channels it doesn't cover.
-          </p>
-        </div>
-        <UButton
-          icon="i-lucide-refresh-cw"
-          size="sm"
-          variant="soft"
-          :loading="status?.state === 'building'"
-          :disabled="loading || saving"
-          @click="refresh"
-        >
-          {{ status?.state === 'building' ? 'Updating…' : 'Refresh' }}
-        </UButton>
-      </div>
-    </template>
-
+  <div class="flex flex-col gap-8">
     <div v-if="loading" class="flex flex-col gap-2">
-      <USkeleton class="h-5 w-2/3" />
-      <USkeleton class="h-16 w-full" />
+      <USkeleton class="h-4 w-24" />
+      <USkeleton class="h-28 w-full rounded-2xl" />
     </div>
 
     <UAlert v-else-if="loadError" color="error" variant="subtle" icon="i-lucide-circle-alert" :title="loadError" />
 
-    <div v-else class="flex flex-col gap-5">
-      <section aria-label="Guide status" class="flex flex-col gap-1 text-sm">
-        <p v-if="status?.state === 'building'" class="text-muted">
-          Downloading and matching guides… large guides can take a minute.
-        </p>
-        <p v-else-if="status?.state === 'error'" class="text-error">
-          The last update failed: {{ status.error }}
-        </p>
-        <p v-else-if="status?.state === 'never'" class="text-muted">
-          The guide hasn't been built yet.
-        </p>
-        <template v-if="status && status.state !== 'never' && coverage !== null">
-          <p>
-            <span class="font-semibold">{{ status.matchedChannels.toLocaleString() }}</span>
-            of {{ status.totalChannels.toLocaleString() }} channels have a guide ({{ coverage }}%) ·
-            {{ status.programmes.toLocaleString() }} programmes
-          </p>
-          <p class="text-muted">
-            Matched by EPG id {{ status.matchedBy.id.toLocaleString() }} · similar id
-            {{ status.matchedBy.normalizedId.toLocaleString() }} · channel name {{ status.matchedBy.name.toLocaleString() }}.
-            Name matches can occasionally pick a different regional version of a channel.
-          </p>
-          <p v-if="status.builtAt" class="text-muted">
-            Updated {{ formatDay(Date.parse(status.builtAt)) }} at {{ formatClock(Date.parse(status.builtAt)) }} ·
-            refreshes automatically every 12 hours.
-          </p>
-        </template>
-      </section>
+    <template v-else>
+      <GroupedSection
+        title="TV Guide"
+        footer="Shows what's on now and next. Your provider's own guide is always used; add XMLTV sources below to fill in the channels it doesn't cover."
+      >
+        <GroupedRow
+          :label="status && coverage !== null
+            ? `${status.matchedChannels.toLocaleString()} of ${status.totalChannels.toLocaleString()} channels have a guide (${coverage}%)`
+            : 'Channels with a guide'"
+          icon="i-lucide-calendar-range"
+          icon-class="bg-gradient-to-br from-amber-400 to-orange-500"
+        >
+          <template v-if="statusLine" #detail>
+            {{ statusLine }}
+          </template>
+        </GroupedRow>
+        <GroupedRow
+          v-if="status && status.state !== 'never' && coverage !== null"
+          label="Matching"
+          icon="i-lucide-link-2"
+          icon-class="bg-gradient-to-br from-sky-400 to-blue-600"
+          :detail="`By EPG id ${status.matchedBy.id.toLocaleString()} · similar id ${status.matchedBy.normalizedId.toLocaleString()} · name ${status.matchedBy.name.toLocaleString()}. Name matches can occasionally pick another regional version of a channel.`"
+        />
+        <GroupedRow v-if="status?.state === 'error'" label="The last update failed" :detail="status.error ?? undefined" icon="i-lucide-circle-alert" icon-class="bg-red-500" />
+        <div class="flex justify-end px-4 py-2.5">
+          <UButton
+            icon="i-lucide-refresh-cw"
+            size="sm"
+            variant="soft"
+            color="neutral"
+            :loading="status?.state === 'building'"
+            :disabled="saving"
+            @click="refresh"
+          >
+            {{ status?.state === 'building' ? 'Updating…' : 'Refresh Now' }}
+          </UButton>
+        </div>
+      </GroupedSection>
 
-      <section aria-label="Guide sources" class="flex flex-col gap-2">
-        <h3 class="text-sm font-semibold">
-          Sources
-        </h3>
-        <ul class="flex flex-col divide-y divide-default rounded-lg border border-default">
-          <li class="flex items-center gap-3 p-3">
-            <UIcon name="i-lucide-server" class="size-5 shrink-0 text-muted" />
-            <div class="min-w-0 flex-1">
-              <p class="text-sm font-medium">
-                Your provider's guide
-              </p>
-              <p class="text-xs text-muted">
-                {{ describeSource(providerStatus) }}
-                <template v-if="providerStatus?.ok && providerStatus.programmes === 0">
-                  — your provider currently publishes no programme data.
-                </template>
-              </p>
-            </div>
-          </li>
-          <li v-for="url in sources" :key="url" class="flex items-center gap-3 p-3">
-            <UIcon
-              :name="sourceStatus(url)?.ok === false ? 'i-lucide-circle-alert' : 'i-lucide-link'"
-              class="size-5 shrink-0"
-              :class="sourceStatus(url)?.ok === false ? 'text-error' : 'text-muted'"
-            />
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium" :title="url">
-                {{ url }}
-              </p>
-              <p class="text-xs" :class="sourceStatus(url)?.ok === false ? 'text-error' : 'text-muted'">
-                {{ describeSource(sourceStatus(url)) }}
-              </p>
-            </div>
-            <UButton
-              icon="i-lucide-trash-2"
-              size="xs"
-              variant="ghost"
-              color="error"
-              :disabled="saving"
-              :aria-label="`Remove ${url}`"
-              @click="removeSource(url)"
-            />
-          </li>
-        </ul>
-
-        <form class="flex flex-col gap-1" @submit.prevent="addSource">
+      <GroupedSection title="Guide Sources">
+        <GroupedRow
+          label="Your provider's guide"
+          icon="i-lucide-server"
+          icon-class="bg-gradient-to-br from-zinc-400 to-zinc-600"
+        >
+          <template #detail>
+            {{ describeSource(providerStatus) }}
+            <template v-if="providerStatus?.ok && providerStatus.programmes === 0">
+              — your provider publishes no programme data.
+            </template>
+          </template>
+        </GroupedRow>
+        <GroupedRow
+          v-for="url in sources"
+          :key="url"
+          :label="url"
+          icon="i-lucide-link"
+          :icon-class="sourceStatus(url)?.ok === false ? 'bg-red-500' : 'bg-gradient-to-br from-emerald-400 to-green-600'"
+        >
+          <template #detail>
+            <span :class="sourceStatus(url)?.ok === false ? 'text-error' : ''">{{ describeSource(sourceStatus(url)) }}</span>
+          </template>
+          <UButton
+            icon="i-lucide-trash-2"
+            size="sm"
+            variant="ghost"
+            color="error"
+            :disabled="saving"
+            :aria-label="`Remove ${url}`"
+            @click="removeSource(url)"
+          />
+        </GroupedRow>
+        <form class="flex flex-col gap-1 px-4 py-3" @submit.prevent="addSource">
           <div class="flex gap-2">
             <UInput
               v-model="newUrl"
@@ -248,39 +234,30 @@ onBeforeUnmount(stopPolling)
               Add
             </UButton>
           </div>
-          <p v-if="urlError" class="text-xs text-error">
+          <p v-if="urlError" class="text-[13px] text-error">
             {{ urlError }}
           </p>
         </form>
-      </section>
+      </GroupedSection>
 
-      <section v-if="suggestions.length" aria-labelledby="epg-suggestions" class="flex flex-col gap-2">
-        <div>
-          <h3 id="epg-suggestions" class="text-sm font-semibold">
-            Suggested sources
-          </h3>
-          <p class="text-xs text-muted">
-            Free guides from epgshare01, a third-party community project. Channels are matched by id and name, so
-            coverage depends on your provider's channel names.
-          </p>
-        </div>
-        <ul class="flex flex-col divide-y divide-default rounded-lg border border-default">
-          <li v-for="source in suggestions" :key="source.url" class="flex items-center gap-3 p-3">
-            <UIcon name="i-lucide-calendar-plus" class="size-5 shrink-0 text-muted" />
-            <div class="min-w-0 flex-1">
-              <p class="text-sm font-medium">
-                {{ source.label }}
-              </p>
-              <p class="text-xs text-muted">
-                {{ source.detail }}
-              </p>
-            </div>
-            <UButton size="xs" variant="soft" icon="i-lucide-plus" :disabled="saving" @click="addSuggested(source.url)">
-              Add
-            </UButton>
-          </li>
-        </ul>
-      </section>
-    </div>
-  </UCard>
+      <GroupedSection
+        v-if="suggestions.length"
+        title="Suggested Sources"
+        footer="Free guides from epgshare01, a third-party community project. Channels are matched by id and name, so coverage depends on your provider's channel names."
+      >
+        <GroupedRow
+          v-for="source in suggestions"
+          :key="source.url"
+          :label="source.label"
+          :detail="source.detail"
+          icon="i-lucide-calendar-plus"
+          icon-class="bg-gradient-to-br from-violet-400 to-purple-600"
+        >
+          <UButton size="sm" variant="soft" icon="i-lucide-plus" :disabled="saving" @click="addSuggested(source.url)">
+            Add
+          </UButton>
+        </GroupedRow>
+      </GroupedSection>
+    </template>
+  </div>
 </template>

@@ -38,7 +38,10 @@ const virtualizer = useWindowVirtualizer(computed(() => ({
 
 watch(rowHeight, () => virtualizer.value.measure())
 
-const virtualRows = computed(() => virtualizer.value.getVirtualItems())
+// Rows depend on the window size, which the server doesn't know: render them only in the
+// browser so server and client markup agree during hydration.
+const mounted = ref(false)
+const virtualRows = computed(() => (mounted.value ? virtualizer.value.getVirtualItems() : []))
 const totalHeight = computed(() => virtualizer.value.getTotalSize())
 
 function rowItems(rowIndex: number): T[] {
@@ -64,6 +67,7 @@ defineExpose({ scrollToItem })
 let resizeObserver: ResizeObserver | null = null
 
 onMounted(() => {
+  mounted.value = true
   updateMeasurements()
   resizeObserver = new ResizeObserver(updateMeasurements)
   if (containerRef.value) resizeObserver.observe(containerRef.value)

@@ -12,26 +12,24 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex flex-1 flex-col gap-4">
-    <h1 class="text-lg font-semibold">
-      Recently Watched
-    </h1>
+  <div class="flex flex-1 flex-col gap-6">
+    <PageTitle title="Recently Watched" />
 
     <div v-if="!ready" class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-      <USkeleton v-for="i in 5" :key="i" class="aspect-video w-full" />
+      <USkeleton v-for="i in 5" :key="i" class="aspect-video w-full rounded-xl" />
     </div>
 
     <EmptyState
       v-else-if="recentChannels.length === 0"
       icon="i-lucide-history"
-      title="Nothing watched yet"
+      title="Nothing Watched Yet"
       description="Channels you watch will show up here, most recent first."
       action-label="Browse channels"
       action-to="/live"
     />
 
     <section v-else aria-labelledby="recent-channels" class="flex flex-col gap-3">
-      <h2 id="recent-channels" class="text-base font-semibold text-highlighted">
+      <h2 id="recent-channels" class="text-xl font-bold tracking-tight text-highlighted">
         Channels
       </h2>
       <LiveChannelGrid :channels="recentChannels" />

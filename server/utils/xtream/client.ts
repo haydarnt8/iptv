@@ -17,6 +17,8 @@ export interface XtreamCredentials {
 }
 
 const REQUEST_TIMEOUT_MS = 10_000
+// A whole catalogue (no category filter) can be 15+ MB, and the timeout covers the download.
+const FULL_LIST_TIMEOUT_MS = 60_000
 
 export class XtreamRequestError extends Error {}
 
@@ -32,9 +34,13 @@ function buildPlayerApiUrl(credentials: XtreamCredentials, params: Record<string
 }
 
 /** Low-level player_api.php caller shared by every Xtream action below. */
-async function requestXtream<T>(credentials: XtreamCredentials, params: Record<string, string> = {}): Promise<T> {
+async function requestXtream<T>(
+  credentials: XtreamCredentials,
+  params: Record<string, string> = {},
+  timeoutMs = REQUEST_TIMEOUT_MS
+): Promise<T> {
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
   try {
     const response = await fetch(buildPlayerApiUrl(credentials, params), { signal: controller.signal })
@@ -123,7 +129,7 @@ export async function getLiveStreams(credentials: XtreamCredentials, categoryId?
   const params: Record<string, string> = { action: 'get_live_streams' }
   if (categoryId) params.category_id = categoryId
 
-  const data = await requestXtream<unknown>(credentials, params)
+  const data = await requestXtream<unknown>(credentials, params, categoryId ? REQUEST_TIMEOUT_MS : FULL_LIST_TIMEOUT_MS)
   return Array.isArray(data) ? data.map(normalizeLiveStream) : []
 }
 
@@ -136,7 +142,7 @@ export async function getVodStreams(credentials: XtreamCredentials, categoryId?:
   const params: Record<string, string> = { action: 'get_vod_streams' }
   if (categoryId) params.category_id = categoryId
 
-  const data = await requestXtream<unknown>(credentials, params)
+  const data = await requestXtream<unknown>(credentials, params, categoryId ? REQUEST_TIMEOUT_MS : FULL_LIST_TIMEOUT_MS)
   return Array.isArray(data) ? data.map(normalizeVodStream) : []
 }
 
@@ -154,7 +160,7 @@ export async function getSeriesList(credentials: XtreamCredentials, categoryId?:
   const params: Record<string, string> = { action: 'get_series' }
   if (categoryId) params.category_id = categoryId
 
-  const data = await requestXtream<unknown>(credentials, params)
+  const data = await requestXtream<unknown>(credentials, params, categoryId ? REQUEST_TIMEOUT_MS : FULL_LIST_TIMEOUT_MS)
   return Array.isArray(data) ? data.map(normalizeSeriesSummary) : []
 }
 

@@ -166,7 +166,7 @@ onBeforeUnmount(() => {
 <template>
   <div
     ref="scrollRef"
-    class="relative overflow-auto rounded-lg border border-default bg-default outline-none focus-visible:ring-2 focus-visible:ring-primary"
+    class="relative overflow-auto rounded-2xl bg-default shadow-card ring-[0.5px] ring-default outline-none focus-visible:ring-2 focus-visible:ring-primary"
     tabindex="0"
     role="region"
     aria-label="TV guide"
@@ -175,7 +175,7 @@ onBeforeUnmount(() => {
     <div class="relative" :style="{ width: `${channelWidth + timelineWidth}px`, height: `${HEADER_HEIGHT + totalHeight}px` }">
       <!-- Time header -->
       <div
-        class="sticky top-0 z-30 flex border-b border-default bg-default/95 backdrop-blur"
+        class="glass sticky top-0 z-30 flex border-b border-default"
         :style="{ height: `${HEADER_HEIGHT}px` }"
       >
         <div
@@ -213,14 +213,14 @@ onBeforeUnmount(() => {
         <button
           type="button"
           class="sticky left-0 z-20 flex shrink-0 items-center gap-2 border-r border-b border-default px-2 text-left transition hover:bg-elevated focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
-          :class="channel.streamId === playingId ? 'bg-[color-mix(in_oklab,var(--ui-primary)_14%,var(--ui-bg))] text-primary' : 'bg-default'"
+          :class="channel.streamId === playingId ? 'bg-[color-mix(in_oklab,var(--ui-primary)_14%,var(--ui-bg))] text-accent' : 'bg-default'"
           :style="{ width: `${channelWidth}px` }"
           :title="`Watch ${channel.name}`"
           :aria-label="`Watch ${channel.name}`"
           @click="emit('play', channel)"
         >
           <!-- Phones get the name only: the column is too narrow for both. -->
-          <LiveChannelLogo v-if="channelWidth > NARROW_CHANNEL_WIDTH" :src="channel.streamIcon" class="size-9" />
+          <LiveChannelLogo v-if="channelWidth > NARROW_CHANNEL_WIDTH" :src="channel.streamIcon" class="size-9 rounded-lg bg-(--logo-tile)" />
           <span class="line-clamp-2 min-w-0 text-xs font-medium">{{ channel.name }}</span>
         </button>
 

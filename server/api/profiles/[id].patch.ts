@@ -17,6 +17,9 @@ export default defineEventHandler(async (event) => {
   const body = await readBodyWithSchema(event, bodySchema)
   const { profile, accountChanged } = await updateProfile(id, body)
   // Rebuild the guide against the new lineup (the guide sources themselves are kept).
-  if (accountChanged) await invalidateGuide(id)
+  if (accountChanged) {
+    await invalidateGuide(id)
+    invalidateSearchIndex(id)
+  }
   return profile
 })

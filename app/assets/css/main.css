@@ -1,32 +1,168 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+/*
+ * Design language: Apple's (iOS / macOS 26). System font (SF Pro on Apple devices; we don't ship
+ * Apple's font files, the OS provides them), Apple's system grays, translucent "glass" materials
+ * for navigation, generous rounding, and soft spring-like motion.
+ */
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --ease-apple: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-spring: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --default-transition-duration: 200ms;
+  --default-transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
 @layer base {
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--ui-primary) 35%, transparent);
+  }
 }
 
 /*
- * Theme overrides. Unlayered on purpose so they win over Nuxt UI's `@layer theme` defaults.
- * Light mode uses the 600 shade of the accent so white text on solid buttons meets WCAG AA
- * (the 500 default doesn't for warm accents like rose). Dark mode keeps Nuxt UI's 400 shade.
+ * Theme tokens. Unlayered on purpose so they win over Nuxt UI's `@layer theme` defaults.
+ * Values follow Apple's semantic colors (systemBackground, secondarySystemBackground, labels,
+ * separators). `--ui-on-primary` is the text color on solid accent fills.
  */
 :root {
+  /*
+   * Safe areas (notch, home indicator, rounded corners) for the installed app; 0 elsewhere.
+   * The floating toolbar sits at --toolbar-top and ends at --toolbar-bottom.
+   */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --toolbar-top: max(0.5rem, var(--safe-top));
+  --toolbar-bottom: calc(var(--toolbar-top) + 3.5rem);
+
+  /* Rounding scale: md 9px (fields), lg 12px, xl 18px (rows, tiles), 2xl 24px (cards), 3xl 36px (heroes). */
+  --ui-radius: 0.375rem;
+
+  --ui-bg: #ffffff;
+  --ui-bg-muted: #f5f5f7;
+  --ui-bg-elevated: #f2f2f7;
+  --ui-bg-accented: #e5e5ea;
+  --ui-border: rgb(60 60 67 / 0.16);
+  --ui-border-muted: rgb(60 60 67 / 0.1);
+  --ui-border-accented: rgb(60 60 67 / 0.29);
+  --ui-text-highlighted: #000000;
+  --ui-text: #1d1d1f;
+  --ui-text-toned: rgb(60 60 67 / 0.85);
+  --ui-text-muted: rgb(60 60 67 / 0.62);
+  --ui-text-dimmed: rgb(60 60 67 / 0.32);
+
+  /* Light mode uses the 600 shade so white text on accent buttons stays readable. */
   --ui-primary: var(--ui-color-primary-600);
+  --ui-on-primary: #ffffff;
+  /* Accent for text (see .text-accent); differs from fills only for light accents like yellow. */
+  --ui-primary-ink: var(--ui-primary);
+  /* Channel logos are drawn for dark backgrounds, so their tiles stay dark in both appearances. */
+  --logo-tile: #1c1c1e;
+
+  /* Light: depth from soft, tight shadows (a wide blur reads as a grey halo on white). */
+  --glass-stroke: rgb(0 0 0 / 0.06);
+  --glass-highlight: rgb(255 255 255 / 0.8);
+  --glass-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 4px 16px rgb(0 0 0 / 0.06);
+  --card-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 4px 14px rgb(0 0 0 / 0.05);
 }
 
-/* Near-black, neutral surfaces: cinema-style dark that keeps video and artwork the focus. */
 .dark {
   color-scheme: dark;
+
+  --ui-bg: #000000;
+  --ui-bg-muted: #0f0f10;
+  --ui-bg-elevated: #1c1c1e;
+  --ui-bg-accented: #2c2c2e;
+  --ui-border: rgb(84 84 88 / 0.48);
+  --ui-border-muted: rgb(84 84 88 / 0.3);
+  --ui-border-accented: rgb(84 84 88 / 0.7);
+  --ui-text-highlighted: #ffffff;
+  --ui-text: #f5f5f7;
+  --ui-text-toned: rgb(235 235 245 / 0.82);
+  --ui-text-muted: rgb(235 235 245 / 0.6);
+  --ui-text-dimmed: rgb(235 235 245 / 0.32);
+  --ui-text-inverted: #000000;
+
   --ui-primary: var(--ui-color-primary-400);
-  --ui-bg: var(--ui-color-neutral-950);
-  --ui-bg-muted: var(--ui-color-neutral-900);
-  --ui-bg-elevated: var(--ui-color-neutral-900);
-  --ui-bg-accented: var(--ui-color-neutral-800);
-  --ui-border: var(--ui-color-neutral-800);
-  --ui-border-muted: var(--ui-color-neutral-800);
-  --ui-border-accented: var(--ui-color-neutral-700);
-  --ui-text-inverted: var(--ui-color-neutral-950);
+  --ui-on-primary: #000000;
+  --ui-primary-ink: var(--ui-primary);
+  --logo-tile: #2c2c2e;
+
+  /* Dark: shadows vanish on black, so depth comes from lighter surfaces and a faint white edge. */
+  --glass-stroke: rgb(255 255 255 / 0.12);
+  --glass-highlight: rgb(255 255 255 / 0.16);
+  --glass-shadow: 0 8px 28px rgb(0 0 0 / 0.5);
+  --card-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.09);
+}
+
+/* Yellow is light: Apple puts dark text on it, in both appearances. In light mode fills use the
+   vivid shade (like Apple's systemYellow) and accent text a deeper one so it stays readable. */
+:root[data-accent="yellow"] {
+  --ui-on-primary: #000000;
+}
+
+:root[data-accent="yellow"]:not(.dark) {
+  --ui-primary: var(--ui-color-primary-500);
+  --ui-primary-ink: var(--ui-color-primary-700);
+}
+
+/* Accent-colored text. Prefer this over text-primary for text on page backgrounds. */
+@utility text-accent {
+  color: var(--ui-primary-ink);
+}
+
+/* Translucent material for bars and floating panels (the content shows through, blurred). */
+@utility glass {
+  background-color: color-mix(in oklab, var(--ui-bg) 72%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  backdrop-filter: saturate(180%) blur(24px);
+}
+
+/* Glass that floats: hairline edge, top highlight and a soft shadow. */
+@utility glass-panel {
+  background-color: color-mix(in oklab, var(--ui-bg-elevated) 70%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(30px);
+  backdrop-filter: saturate(180%) blur(30px);
+  box-shadow: inset 0 0.5px 0 var(--glass-highlight), inset 0 0 0 0.5px var(--glass-stroke), var(--glass-shadow);
+}
+
+/* Dark glass for controls drawn over video, whatever the app's appearance. */
+@utility glass-video {
+  background-color: rgb(30 30 32 / 0.55);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  backdrop-filter: saturate(180%) blur(24px);
+  box-shadow: inset 0 0.5px 0 rgb(255 255 255 / 0.18), inset 0 0 0 0.5px rgb(255 255 255 / 0.1);
+}
+
+@utility shadow-card {
+  box-shadow: var(--card-shadow);
+}
+
+/* Route changes cross-fade (opacity only: list virtualization measures layout on mount). */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 160ms var(--ease-apple);
+}
+
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

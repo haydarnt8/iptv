@@ -24,13 +24,16 @@ function onActionClick() {
 </script>
 
 <template>
-  <div class="flex flex-1 flex-col items-center justify-center gap-3 px-4 py-16 text-center">
-    <UIcon :name="icon" class="size-10 text-muted" />
-    <h2 class="text-lg font-semibold">{{ title }}</h2>
-    <p v-if="description" class="max-w-sm text-sm text-muted">
+  <!-- Like Apple's ContentUnavailableView: large glyph, title, short explanation, one action. -->
+  <div class="flex flex-1 flex-col items-center justify-center gap-2 px-4 py-16 text-center">
+    <UIcon :name="icon" class="mb-2 size-14 text-dimmed" />
+    <h2 class="text-xl font-semibold tracking-tight text-highlighted">
+      {{ title }}
+    </h2>
+    <p v-if="description" class="max-w-sm text-[15px] leading-snug text-muted">
       {{ description }}
     </p>
-    <UButton v-if="actionLabel" :to="actionTo" @click="onActionClick">
+    <UButton v-if="actionLabel" :to="actionTo" size="lg" class="mt-3 px-5" @click="onActionClick">
       {{ actionLabel }}
     </UButton>
   </div>

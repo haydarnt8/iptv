@@ -22,22 +22,22 @@ onMounted(() => {
   store.init()
 })
 
-// Cover (2:3) plus a fixed two-line title, so every row has the same height.
-const cellHeight = (columnWidth: number) => columnWidth * 1.5 + 46
-const showKey = (show: SeriesSummary) => show.seriesId
+const countLabel = computed(() =>
+  !itemsLoading.value && !itemsError.value && items.value.length
+    ? `${filteredItems.value.length.toLocaleString()} series`
+    : undefined
+)
 
-function hideIcon(event: Event) {
-  (event.target as HTMLImageElement).style.display = 'none'
-}
+// Artwork (2:3) plus two title lines and a rating line, so every row has the same height.
+const cellHeight = (columnWidth: number) => columnWidth * 1.5 + 60
+const itemKey = (item: SeriesSummary) => item.seriesId
 </script>
 
 <template>
-  <div class="flex flex-1 flex-col gap-4">
-    <h1 class="text-lg font-semibold">
-      Series
-    </h1>
+  <div class="flex flex-1 flex-col gap-5">
+    <PageTitle title="Series" :subtitle="countLabel" />
 
-    <USkeleton v-if="categoriesLoading" class="h-9 w-full sm:w-72" />
+    <USkeleton v-if="categoriesLoading" class="h-9 w-full rounded-xl sm:w-72" />
 
     <div v-else-if="categoriesError" class="flex flex-col items-start gap-2">
       <UAlert color="error" variant="subtle" icon="i-lucide-circle-alert" :title="categoriesError" />
@@ -64,13 +64,17 @@ function hideIcon(event: Event) {
           v-model="searchQuery"
           icon="i-lucide-search"
           :placeholder="`Search ${selectedCategory?.categoryName ?? 'this category'}`"
+          :aria-label="`Search ${selectedCategory?.categoryName ?? 'this category'}`"
           :disabled="itemsLoading || !!itemsError"
           class="w-full sm:max-w-sm"
         />
       </div>
 
-      <div v-if="itemsLoading" class="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-6">
-        <USkeleton v-for="i in 12" :key="i" class="aspect-2/3 w-full" />
+      <div v-if="itemsLoading" class="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
+        <div v-for="i in 12" :key="i" class="flex flex-col gap-2">
+          <USkeleton class="aspect-2/3 w-full rounded-lg" />
+          <USkeleton class="h-3 w-3/4" />
+        </div>
       </div>
 
       <div v-else-if="itemsError" class="flex flex-col items-start gap-2">
@@ -90,38 +94,28 @@ function hideIcon(event: Event) {
       <EmptyState
         v-else-if="filteredItems.length === 0"
         icon="i-lucide-search-x"
-        title="No matching series"
-        description="Try a different search term or category."
+        title="No Results"
+        :description="`Nothing in ${selectedCategory?.categoryName ?? 'this category'} matches \u201C${searchQuery}\u201D.`"
       />
 
-      <template v-else>
-        <p class="text-sm text-muted">
-          {{ filteredItems.length.toLocaleString() }} series
-        </p>
-        <VirtualGrid
-          :items="filteredItems"
-          :item-key="showKey"
-          :min-column-width="140"
-          :item-height="cellHeight"
-        >
-          <template #default="{ item: show }">
-            <NuxtLink :to="`/series/${show.seriesId}`" class="group flex flex-col gap-1.5">
-              <div class="flex aspect-2/3 items-center justify-center overflow-hidden rounded-lg bg-elevated">
-                <img
-                  v-if="show.cover"
-                  :src="show.cover"
-                  alt=""
-                  class="h-full w-full object-cover transition group-hover:scale-105"
-                  loading="lazy"
-                  @error="hideIcon"
-                >
-                <UIcon v-else name="i-lucide-clapperboard" class="size-8 text-muted" />
-              </div>
-              <span class="line-clamp-2 h-10 text-sm leading-5">{{ show.name }}</span>
-            </NuxtLink>
-          </template>
-        </VirtualGrid>
-      </template>
+      <VirtualGrid
+        v-else
+        :items="filteredItems"
+        :item-key="itemKey"
+        :min-column-width="150"
+        :item-height="cellHeight"
+        :gap="18"
+      >
+        <template #default="{ item }">
+          <MediaPosterCard
+            :to="`/series/${item.seriesId}`"
+            :title="item.name"
+            :image="item.cover"
+            :rating="item.rating"
+            icon="i-lucide-clapperboard"
+          />
+        </template>
+      </VirtualGrid>
     </template>
   </div>
 </template>

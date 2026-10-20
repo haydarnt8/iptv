@@ -35,7 +35,13 @@ const castMedia = computed<CastMediaRequest | null>(() =>
     : null
 )
 
-function formatDuration(seconds: number | null): string | null {
+const metadata = computed(() => {
+  const value = movie.value
+  if (!value) return []
+  return [value.releaseDate?.slice(0, 4), value.genre, formatDuration(value.durationSecs)].filter((part): part is string => !!part)
+})
+
+function formatDuration(seconds: number | null | undefined): string | null {
   if (!seconds) return null
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.round((seconds % 3600) / 60)
@@ -44,14 +50,14 @@ function formatDuration(seconds: number | null): string | null {
 </script>
 
 <template>
-  <div class="flex flex-1 flex-col gap-4">
-    <UButton to="/movies" icon="i-lucide-arrow-left" variant="ghost" color="neutral" size="sm" class="self-start">
-      Back to Movies
+  <div class="flex flex-1 flex-col gap-6">
+    <UButton to="/movies" icon="i-lucide-chevron-left" variant="ghost" color="neutral" class="-ml-2 self-start">
+      Movies
     </UButton>
 
-    <div v-if="pending" class="flex flex-col gap-4">
-      <USkeleton class="aspect-video w-full" />
-      <USkeleton class="h-6 w-1/2" />
+    <div v-if="pending" class="flex flex-col gap-6">
+      <USkeleton class="aspect-video w-full rounded-2xl" />
+      <USkeleton class="h-8 w-1/2" />
       <USkeleton class="h-20 w-full" />
     </div>
 
@@ -64,24 +70,25 @@ function formatDuration(seconds: number | null): string | null {
 
     <template v-else-if="movie">
       <Player v-if="isSupported" :src="playerSrc" :format="playerFormat" :title="movie.name" :cast-media="castMedia">
+        <!-- Before playback: an Apple TV–style hero over the blurred artwork. -->
         <template #idle>
           <img
             v-if="movie.cover"
             :src="movie.cover"
             alt=""
-            class="absolute inset-0 size-full scale-110 object-cover opacity-30 blur-md"
+            class="absolute inset-0 size-full scale-110 object-cover opacity-60 blur-2xl"
           >
-          <div class="relative flex flex-col items-center gap-3">
-            <UButton
-              icon="i-lucide-play"
-              size="xl"
-              class="rounded-full p-4"
-              :aria-label="`Play ${movie.name}`"
-              @click="started = true"
-            />
-            <p class="text-sm font-medium text-white drop-shadow">
-              Play{{ formatDuration(movie.durationSecs) ? ` · ${formatDuration(movie.durationSecs)}` : '' }}
+          <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/10" />
+          <div class="absolute inset-x-0 bottom-0 flex flex-col items-start gap-2 p-5 text-left sm:p-8">
+            <h1 class="line-clamp-2 text-2xl font-bold tracking-tight text-white sm:text-4xl">
+              {{ movie.name }}
+            </h1>
+            <p v-if="metadata.length" class="text-[13px] text-white/75 sm:text-[15px]">
+              {{ metadata.join(' · ') }}
             </p>
+            <UButton icon="i-lucide-play" size="xl" class="mt-2 px-7" :aria-label="`Play ${movie.name}`" @click="started = true">
+              Play
+            </UButton>
           </div>
         </template>
       </Player>
@@ -95,34 +102,35 @@ function formatDuration(seconds: number | null): string | null {
         :actions="[{ label: 'Open stream link', to: streamUrl ?? undefined, target: '_blank', variant: 'soft', size: 'sm' }]"
       />
 
-      <div class="flex flex-col gap-3 sm:flex-row">
+      <section class="flex flex-col gap-6 sm:flex-row sm:items-start">
         <img
           v-if="movie.cover"
           :src="movie.cover"
           alt=""
-          class="w-32 shrink-0 rounded-lg object-cover sm:w-40"
+          class="hidden w-44 shrink-0 rounded-lg shadow-card ring-[0.5px] ring-default sm:block"
         >
-        <div class="flex flex-col gap-2">
-          <h1 class="text-xl font-semibold">
-            {{ movie.name }}
-          </h1>
-          <div class="flex flex-wrap items-center gap-2 text-sm text-muted">
-            <span v-if="movie.rating">★ {{ movie.rating }}</span>
-            <span v-if="movie.releaseDate">{{ movie.releaseDate }}</span>
-            <span v-if="formatDuration(movie.durationSecs)">{{ formatDuration(movie.durationSecs) }}</span>
-            <span v-if="movie.genre">{{ movie.genre }}</span>
+        <div class="flex min-w-0 flex-col gap-4">
+          <div class="flex flex-col gap-1.5">
+            <h2 class="text-2xl font-bold tracking-tight text-highlighted">
+              {{ movie.name }}
+            </h2>
+            <div class="flex flex-wrap items-center gap-2 text-[13px] text-muted">
+              <span v-if="movie.rating" class="flex items-center gap-1 rounded-full bg-elevated px-2 py-0.5 font-medium text-default">
+                <UIcon name="i-lucide-star" class="size-3.5 text-accent" />
+                {{ movie.rating.toFixed(1) }}
+              </span>
+              <span v-for="part in metadata" :key="part" class="rounded-full bg-elevated px-2 py-0.5">{{ part }}</span>
+            </div>
           </div>
-          <p v-if="movie.plot" class="text-sm">
+          <p v-if="movie.plot" class="max-w-3xl text-[15px] leading-relaxed text-default">
             {{ movie.plot }}
           </p>
-          <p v-if="movie.director" class="text-sm text-muted">
-            <span class="font-medium">Director:</span> {{ movie.director }}
-          </p>
-          <p v-if="movie.cast" class="text-sm text-muted">
-            <span class="font-medium">Cast:</span> {{ movie.cast }}
-          </p>
+          <GroupedSection v-if="movie.director || movie.cast" title="Cast & Crew" class="max-w-3xl">
+            <GroupedRow v-if="movie.director" label="Director" :detail="movie.director" />
+            <GroupedRow v-if="movie.cast" label="Cast" :detail="movie.cast" />
+          </GroupedSection>
         </div>
-      </div>
+      </section>
     </template>
   </div>
 </template>

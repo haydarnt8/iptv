@@ -25,13 +25,13 @@ watch(() => props.image, () => {
   >
     <div
       v-if="visible"
-      class="absolute inset-x-0 top-0 z-10 flex items-center gap-3 bg-gradient-to-b from-black/80 to-transparent px-3 pb-8 pt-3 text-white"
+      class="glass-video absolute inset-x-3 top-3 z-10 flex items-center gap-3 rounded-2xl py-2 pr-2 pl-2.5 text-white"
     >
       <img
         v-if="image && !imageFailed"
         :src="image"
         alt=""
-        class="size-10 shrink-0 rounded bg-white/10 object-contain p-0.5"
+        class="size-10 shrink-0 rounded-lg bg-white/10 object-contain p-1"
         @error="imageFailed = true"
       >
       <div class="min-w-0 flex-1">

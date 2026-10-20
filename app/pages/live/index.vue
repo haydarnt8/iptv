@@ -79,8 +79,8 @@ function play(channel: LiveStream) {
 
 // --- Keep the playing channel visible in the list while zapping ---
 
-const HEADER_HEIGHT = 56
-const MOBILE_NAV_HEIGHT = 64
+// Floating tab bar (64px) plus its 12px gap above the screen edge, and a little air.
+const MOBILE_NAV_HEIGHT = 88
 
 function visibleListBounds() {
   const wrapper = playerWrapperRef.value
@@ -88,7 +88,7 @@ function visibleListBounds() {
   const playerBottom = wrapper && getComputedStyle(wrapper).position === 'sticky' ? wrapper.getBoundingClientRect().bottom : 0
   const isDesktop = window.matchMedia('(min-width: 768px)').matches
   return {
-    top: Math.max(HEADER_HEIGHT, playerBottom),
+    top: Math.max(document.querySelector('header')?.getBoundingClientRect().bottom ?? 64, playerBottom),
     bottom: window.innerHeight - (isDesktop ? 0 : MOBILE_NAV_HEIGHT)
   }
 }
@@ -202,10 +202,10 @@ const SINGLE_COLUMN = Number.MAX_SAFE_INTEGER
     </h1>
 
     <!-- `contents` on phones so the player can stick for the whole page; a sticky column on desktop. -->
-    <div class="contents lg:sticky lg:top-[4.5rem] lg:flex lg:max-h-[calc(100dvh-5.5rem)] lg:flex-col lg:gap-3 lg:overflow-y-auto">
+    <div class="contents lg:sticky lg:top-[calc(var(--toolbar-bottom)+1rem)] lg:flex lg:max-h-[calc(100dvh-var(--toolbar-bottom)-2rem)] lg:flex-col lg:gap-3 lg:overflow-y-auto">
       <div
         ref="playerWrapper"
-        :class="selectedChannel ? 'sticky top-14 z-20 -mx-4 -mt-4 bg-default px-4 pt-4 pb-1 sm:mx-0 sm:px-0 lg:static lg:m-0 lg:p-0' : ''"
+        :class="selectedChannel ? 'sticky top-(--toolbar-bottom) z-20 -mx-4 -mt-4 bg-default px-4 pt-4 pb-1 sm:mx-0 sm:px-0 lg:static lg:m-0 lg:p-0' : ''"
       >
         <Player
           ref="player"
@@ -222,7 +222,7 @@ const SINGLE_COLUMN = Number.MAX_SAFE_INTEGER
         >
           <template #idle>
             <template v-if="resumeChannel">
-              <LiveChannelLogo :src="resumeChannel.streamIcon" class="size-14" />
+              <LiveChannelLogo :src="resumeChannel.streamIcon" class="size-16 rounded-2xl bg-white/10" />
               <p class="text-sm text-muted">
                 Pick up where you left off
               </p>

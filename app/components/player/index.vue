@@ -316,8 +316,8 @@ onBeforeUnmount(() => {
 <template>
   <div
     ref="containerRef"
-    class="group relative aspect-video w-full overflow-hidden rounded-lg bg-black outline-none after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-[inherit] after:ring-primary after:ring-inset focus-visible:after:ring-2"
-    :class="{ 'cursor-none': !showControls && isPlaying, 'rounded-none': isFullscreen }"
+    class="group relative aspect-video w-full overflow-hidden bg-black outline-none after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-[inherit] after:ring-primary after:ring-inset focus-visible:after:ring-2"
+    :class="[isFullscreen ? 'rounded-none' : 'rounded-2xl shadow-card ring-[0.5px] ring-default', { 'cursor-none': !showControls && isPlaying }]"
     tabindex="0"
     role="region"
     aria-label="Video player"

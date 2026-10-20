@@ -6,7 +6,7 @@ const route = useRoute()
 const seriesId = route.params.id as string
 
 // Fixed row: one-line title + up to two lines of plot.
-const episodeHeight = () => 84
+const episodeHeight = () => 88
 const episodeKey = (episode: SeriesEpisode) => episode.id
 
 const xtream = useXtreamApi()
@@ -88,6 +88,24 @@ const castMedia = computed<CastMediaRequest | null>(() => {
   }
 })
 
+const firstEpisodeOfSeason = computed(() => episodesInSelectedSeason.value[0] ?? null)
+
+const metadata = computed(() => {
+  const info = series.value?.info
+  if (!info) return []
+  const seasonCount = availableSeasonNumbers.value.length
+  return [
+    info.releaseDate?.slice(0, 4),
+    seasonCount ? `${seasonCount} ${seasonCount === 1 ? 'season' : 'seasons'}` : null
+  ].filter((part): part is string => !!part)
+})
+
+function playAndReveal(episodeId: string) {
+  playEpisode(episodeId)
+  // The player appears at the top of the page.
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
 function formatDuration(seconds: number | null): string | null {
   if (!seconds) return null
   const hours = Math.floor(seconds / 3600)
@@ -97,14 +115,14 @@ function formatDuration(seconds: number | null): string | null {
 </script>
 
 <template>
-  <div class="flex flex-1 flex-col gap-4">
-    <UButton to="/series" icon="i-lucide-arrow-left" variant="ghost" color="neutral" size="sm" class="self-start">
-      Back to Series
+  <div class="flex flex-1 flex-col gap-6">
+    <UButton to="/series" icon="i-lucide-chevron-left" variant="ghost" color="neutral" class="-ml-2 self-start">
+      Series
     </UButton>
 
-    <div v-if="pending" class="flex flex-col gap-4">
-      <USkeleton class="aspect-video w-full" />
-      <USkeleton class="h-6 w-1/2" />
+    <div v-if="pending" class="flex flex-col gap-6">
+      <USkeleton class="h-72 w-full rounded-3xl" />
+      <USkeleton class="h-8 w-1/2" />
       <USkeleton class="h-20 w-full" />
     </div>
 
@@ -121,6 +139,8 @@ function formatDuration(seconds: number | null): string | null {
           v-if="isSupported"
           :src="streamUrl"
           :format="playerFormat"
+          :title="selectedEpisode.title"
+          :subtitle="`${series.info.name} · Season ${selectedEpisode.seasonNumber}, Episode ${selectedEpisode.episodeNum}`"
           :cast-media="castMedia"
           idle-message="Select an episode to start watching"
         />
@@ -139,68 +159,96 @@ function formatDuration(seconds: number | null): string | null {
             icon="i-lucide-skip-back"
             variant="soft"
             color="neutral"
-            size="sm"
             :disabled="!previousEpisode"
             @click="previousEpisode && playEpisode(previousEpisode.id)"
           >
-            Previous episode
+            <span class="hidden sm:inline">Previous</span>
           </UButton>
-          <span class="text-sm text-muted">
-            S{{ selectedEpisode.seasonNumber }}E{{ selectedEpisode.episodeNum }} - {{ selectedEpisode.title }}
-          </span>
+          <p class="min-w-0 truncate text-center text-[15px] text-muted">
+            <span class="font-semibold text-highlighted">S{{ selectedEpisode.seasonNumber }} E{{ selectedEpisode.episodeNum }}</span>
+            · {{ selectedEpisode.title }}
+          </p>
           <UButton
             icon="i-lucide-skip-forward"
             trailing
             variant="soft"
             color="neutral"
-            size="sm"
             :disabled="!nextEpisode"
             @click="nextEpisode && playEpisode(nextEpisode.id)"
           >
-            Next episode
+            <span class="hidden sm:inline">Next</span>
           </UButton>
         </div>
       </template>
 
-      <div class="flex flex-col gap-3 sm:flex-row">
+      <!-- Apple TV–style hero: the cover, blurred, as ambient background. -->
+      <section class="relative isolate overflow-hidden rounded-3xl bg-elevated shadow-card">
         <img
           v-if="series.info.cover"
           :src="series.info.cover"
           alt=""
-          class="w-32 shrink-0 rounded-lg object-cover sm:w-40"
+          aria-hidden="true"
+          class="absolute inset-0 -z-10 size-full scale-125 object-cover opacity-40 blur-3xl saturate-150"
         >
-        <div class="flex flex-col gap-2">
-          <h1 class="text-xl font-semibold">
-            {{ series.info.name }}
-          </h1>
-          <div class="flex flex-wrap items-center gap-2 text-sm text-muted">
-            <span v-if="series.info.rating">★ {{ series.info.rating }}</span>
-            <span v-if="series.info.releaseDate">{{ series.info.releaseDate }}</span>
+        <div class="absolute inset-0 -z-10 bg-gradient-to-r from-elevated via-elevated/80 to-elevated/30" />
+        <div class="flex flex-col gap-6 p-6 sm:flex-row sm:items-end sm:p-8">
+          <img
+            v-if="series.info.cover"
+            :src="series.info.cover"
+            alt=""
+            class="w-32 shrink-0 rounded-lg shadow-card ring-[0.5px] ring-default sm:w-48"
+          >
+          <div class="flex min-w-0 flex-col gap-2">
+            <h1 class="text-2xl font-bold tracking-tight text-highlighted sm:text-4xl">
+              {{ series.info.name }}
+            </h1>
+            <div class="flex flex-wrap items-center gap-2 text-[13px] text-muted">
+              <span v-if="series.info.rating" class="flex items-center gap-1 rounded-full bg-default/60 px-2 py-0.5 font-medium text-default">
+                <UIcon name="i-lucide-star" class="size-3.5 text-accent" />
+                {{ series.info.rating.toFixed(1) }}
+              </span>
+              <span v-for="part in metadata" :key="part" class="rounded-full bg-default/60 px-2 py-0.5">{{ part }}</span>
+            </div>
+            <p v-if="series.info.plot" class="line-clamp-4 max-w-3xl text-[15px] leading-relaxed text-default">
+              {{ series.info.plot }}
+            </p>
+            <UButton
+              v-if="firstEpisodeOfSeason && !selectedEpisode"
+              icon="i-lucide-play"
+              size="xl"
+              class="mt-2 self-start px-6"
+              @click="playAndReveal(firstEpisodeOfSeason.id)"
+            >
+              Play S{{ firstEpisodeOfSeason.seasonNumber }} E{{ firstEpisodeOfSeason.episodeNum }}
+            </UButton>
           </div>
-          <p v-if="series.info.plot" class="text-sm">
-            {{ series.info.plot }}
-          </p>
         </div>
-      </div>
+      </section>
 
       <EmptyState
         v-if="sortedEpisodes.length === 0"
         icon="i-lucide-clapperboard"
-        title="No episodes"
+        title="No Episodes"
         description="Your IPTV service didn't return any episodes for this series."
       />
 
       <template v-else>
-        <div class="flex gap-2 overflow-x-auto pb-1">
-          <UButton
-            v-for="seasonNumber in availableSeasonNumbers"
-            :key="seasonNumber"
-            size="sm"
-            :variant="selectedSeasonNumber === seasonNumber ? 'solid' : 'soft'"
-            @click="selectedSeasonNumber = seasonNumber"
-          >
-            {{ seasonLabel(seasonNumber) }}
-          </UButton>
+        <!-- iOS-style segmented control (scrolls when a show has many seasons). -->
+        <div class="-mx-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
+          <div class="inline-flex gap-1 rounded-full bg-elevated p-1" role="tablist" aria-label="Seasons">
+            <button
+              v-for="seasonNumber in availableSeasonNumbers"
+              :key="seasonNumber"
+              type="button"
+              role="tab"
+              :aria-selected="selectedSeasonNumber === seasonNumber"
+              class="shrink-0 rounded-full px-4 py-1.5 text-[13px] font-medium whitespace-nowrap outline-none transition focus-visible:ring-2 focus-visible:ring-primary"
+              :class="selectedSeasonNumber === seasonNumber ? 'bg-accented text-highlighted shadow-sm' : 'text-muted hover:text-highlighted'"
+              @click="selectedSeasonNumber = seasonNumber"
+            >
+              {{ seasonLabel(seasonNumber) }}
+            </button>
+          </div>
         </div>
 
         <!-- Long-running shows reach 1,000+ episodes in a single season. -->
@@ -209,29 +257,28 @@ function formatDuration(seconds: number | null): string | null {
           :item-key="episodeKey"
           :min-column-width="Number.MAX_SAFE_INTEGER"
           :item-height="episodeHeight"
-          :gap="8"
+          :gap="6"
         >
           <template #default="{ item: episode }">
             <button
               type="button"
-              class="flex h-full w-full items-center gap-3 overflow-hidden rounded-lg border bg-default px-4 text-left transition hover:bg-elevated focus-visible:outline-2 focus-visible:outline-primary"
-              :class="episode.id === selectedEpisodeId ? 'border-primary ring-2 ring-primary' : 'border-default'"
-              :aria-pressed="episode.id === selectedEpisodeId"
-              @click="playEpisode(episode.id)"
+              class="flex h-full w-full items-center gap-4 overflow-hidden rounded-xl px-4 text-left outline-none transition active:scale-[0.995] focus-visible:ring-2 focus-visible:ring-primary"
+              :class="episode.id === selectedEpisodeId ? 'bg-accented/70' : 'bg-elevated hover:bg-accented/50'"
+              :aria-current="episode.id === selectedEpisodeId ? 'true' : undefined"
+              @click="playAndReveal(episode.id)"
             >
-              <UIcon
-                :name="episode.id === selectedEpisodeId ? 'i-lucide-play-circle' : 'i-lucide-circle-play'"
-                class="size-6 shrink-0 text-muted"
-              />
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-medium">
-                  {{ episode.episodeNum }}. {{ episode.title }}
-                </p>
-                <p v-if="episode.plot" class="line-clamp-2 text-sm text-muted">
-                  {{ episode.plot }}
-                </p>
-              </div>
-              <span v-if="formatDuration(episode.durationSecs)" class="shrink-0 text-sm text-muted">
+              <span
+                class="w-8 shrink-0 text-center text-xl font-semibold tabular-nums"
+                :class="episode.id === selectedEpisodeId ? 'text-accent' : 'text-dimmed'"
+              >
+                <UIcon v-if="episode.id === selectedEpisodeId" name="i-lucide-audio-lines" class="size-5" />
+                <template v-else>{{ episode.episodeNum }}</template>
+              </span>
+              <span class="min-w-0 flex-1">
+                <span class="block truncate text-[15px] font-medium text-highlighted">{{ episode.title }}</span>
+                <span v-if="episode.plot" class="line-clamp-2 text-[13px] leading-snug text-muted">{{ episode.plot }}</span>
+              </span>
+              <span v-if="formatDuration(episode.durationSecs)" class="shrink-0 text-[13px] text-muted">
                 {{ formatDuration(episode.durationSecs) }}
               </span>
             </button>

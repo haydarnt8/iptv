@@ -1,4 +1,5 @@
 import type { XtreamAccountInfo } from '#shared/types/profile'
+import type { SearchResults } from '#shared/types/search'
 import type { LiveStream, SeriesDetails, SeriesSummary, VodDetails, VodStream, XtreamCategory } from '#shared/types/xtream'
 
 /**
@@ -23,6 +24,10 @@ export function useXtreamApi() {
     getSeriesList: (categoryId?: string) =>
       $fetch<SeriesSummary[]>('/api/xtream/series', { query: { categoryId } }),
     getSeriesDetails: (seriesId: string) =>
-      $fetch<SeriesDetails>(`/api/xtream/series/${seriesId}`)
+      $fetch<SeriesDetails>(`/api/xtream/series/${seriesId}`),
+
+    search: (query: string, signal?: AbortSignal) =>
+      $fetch<SearchResults>('/api/search', { query: { q: query }, signal }),
+    warmSearch: () => $fetch('/api/search/warm', { method: 'POST' })
   }
 }

@@ -18,22 +18,22 @@ const progress = computed(() => (current.value ? programmeProgress(current.value
 
 <template>
   <div
-    class="group/row flex h-full items-center gap-1 rounded-lg pr-1 transition"
-    :class="playing ? 'bg-primary/10 ring-1 ring-primary/40 ring-inset' : 'hover:bg-elevated'"
+    class="group/row flex h-full items-center gap-1 rounded-xl pr-1 transition"
+    :class="playing ? 'bg-accented/70' : 'hover:bg-accented/40'"
     :data-stream-id="channel.streamId"
   >
     <button
       type="button"
-      class="flex h-full min-w-0 flex-1 items-center gap-3 rounded-lg px-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      class="flex h-full min-w-0 flex-1 items-center gap-3 rounded-xl px-2 text-left outline-none transition active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-primary"
       data-channel-button
       :aria-current="playing ? 'true' : undefined"
       @click="$emit('play')"
     >
-      <LiveChannelLogo :src="channel.streamIcon" class="size-11" />
+      <LiveChannelLogo :src="channel.streamIcon" class="size-11 rounded-xl bg-(--logo-tile)" />
       <span class="flex min-w-0 flex-1 flex-col gap-0.5">
         <span class="flex items-center gap-1.5">
-          <UIcon v-if="playing" name="i-lucide-audio-lines" class="size-4 shrink-0 text-primary" aria-label="Playing" />
-          <span class="truncate text-sm font-medium" :class="playing ? 'text-primary' : 'text-highlighted'">
+          <UIcon v-if="playing" name="i-lucide-audio-lines" class="size-4 shrink-0 text-accent" aria-label="Playing" />
+          <span class="truncate text-sm font-medium" :class="playing ? 'text-accent' : 'text-highlighted'">
             {{ channel.name }}
           </span>
         </span>

@@ -17,11 +17,12 @@ const favoriteStrip = computed(() => favorites.value.slice(0, STRIP_SIZE))
 // The first recent channel is already the "Continue watching" hero.
 const recentStrip = computed(() => recentChannels.value.slice(1, STRIP_SIZE + 1))
 
+// Colourful category tiles, like the Apple TV app's. Literal classes for Tailwind's scanner.
 const browseTiles = [
-  { label: 'Live TV', description: 'All channels', icon: 'i-lucide-tv', to: '/live' },
-  { label: 'TV Guide', description: 'What\'s on later', icon: 'i-lucide-calendar-range', to: '/live/guide' },
-  { label: 'Movies', description: 'On demand', icon: 'i-lucide-film', to: '/movies' },
-  { label: 'Series', description: 'Shows & episodes', icon: 'i-lucide-clapperboard', to: '/series' }
+  { label: 'Live TV', description: 'All channels', icon: 'i-lucide-tv', to: '/live', tint: 'from-rose-500 to-red-600' },
+  { label: 'TV Guide', description: 'What\'s on later', icon: 'i-lucide-calendar-range', to: '/live/guide', tint: 'from-amber-400 to-orange-500' },
+  { label: 'Movies', description: 'On demand', icon: 'i-lucide-film', to: '/movies', tint: 'from-sky-400 to-blue-600' },
+  { label: 'Series', description: 'Shows & episodes', icon: 'i-lucide-clapperboard', to: '/series', tint: 'from-violet-400 to-purple-600' }
 ]
 
 function loadGuide() {
@@ -52,15 +53,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex flex-1 flex-col">
-    <h1 class="sr-only">
-      Home
-    </h1>
+  <div class="flex flex-1 flex-col gap-6">
+    <PageTitle title="Home" />
 
     <div v-if="!ready" class="flex flex-col gap-6" aria-busy="true">
-      <USkeleton class="h-44 w-full rounded-xl" />
-      <div class="flex gap-3 overflow-hidden">
-        <USkeleton v-for="i in 5" :key="i" class="aspect-video w-40 shrink-0 sm:w-48" />
+      <USkeleton class="h-56 w-full rounded-3xl" />
+      <div class="flex gap-4 overflow-hidden">
+        <USkeleton v-for="i in 5" :key="i" class="aspect-video w-44 shrink-0 rounded-xl sm:w-56" />
       </div>
     </div>
 
@@ -82,29 +81,32 @@ onBeforeUnmount(() => {
       action-to="/profiles"
     />
 
-    <div v-else class="flex flex-col gap-8">
+    <div v-else class="flex flex-col gap-10">
       <HomeContinueWatching v-if="resumeChannel" :channel="resumeChannel" :now="clock" />
 
       <section
         v-else
         aria-label="Start watching"
-        class="flex flex-col items-start gap-3 rounded-xl border border-default bg-gradient-to-br from-primary/20 via-elevated/60 to-default p-6"
+        class="relative isolate flex flex-col items-start gap-3 overflow-hidden rounded-3xl bg-elevated p-8 shadow-card"
       >
-        <UIcon name="i-lucide-tv" class="size-10 text-primary" />
-        <h2 class="text-xl font-bold text-highlighted">
+        <div class="absolute -top-24 -right-24 -z-10 size-72 rounded-full bg-primary/25 blur-3xl" aria-hidden="true" />
+        <span class="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-card">
+          <UIcon name="i-lucide-tv" class="size-7" />
+        </span>
+        <h2 class="text-2xl font-bold tracking-tight text-highlighted">
           Start watching live TV
         </h2>
-        <p class="max-w-md text-sm text-muted">
+        <p class="max-w-md text-[15px] text-muted">
           Browse channels by category, star your favorites, and the channel you watch last will be waiting here.
         </p>
-        <UButton to="/live" icon="i-lucide-play" size="lg">
-          Browse channels
+        <UButton to="/live" icon="i-lucide-play" size="xl" class="mt-2 px-6">
+          Browse Channels
         </UButton>
       </section>
 
       <HomeChannelStrip
         v-if="favoriteStrip.length"
-        title="Favorite channels"
+        title="Favorite Channels"
         :channels="favoriteStrip"
         :now="clock"
         see-all-to="/favorites"
@@ -112,45 +114,49 @@ onBeforeUnmount(() => {
 
       <HomeChannelStrip
         v-if="recentStrip.length"
-        title="Recently watched"
+        title="Recently Watched"
         :channels="recentStrip"
         :now="clock"
         see-all-to="/recently-watched"
       />
 
-      <section aria-label="Browse" class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <NuxtLink
-          v-for="tile in browseTiles"
-          :key="tile.to"
-          :to="tile.to"
-          class="group flex items-center gap-3 rounded-lg border border-default bg-elevated/40 p-3 transition hover:border-primary/50 hover:bg-elevated focus-visible:outline-2 focus-visible:outline-primary sm:p-4"
-        >
-          <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary transition group-hover:bg-primary group-hover:text-inverted">
-            <UIcon :name="tile.icon" class="size-5" />
-          </span>
-          <span class="flex min-w-0 flex-col">
-            <span class="truncate font-semibold text-highlighted">{{ tile.label }}</span>
-            <span class="truncate text-xs text-muted">{{ tile.description }}</span>
-          </span>
-        </NuxtLink>
+      <section aria-labelledby="browse-heading" class="flex flex-col gap-3">
+        <h2 id="browse-heading" class="text-xl font-bold tracking-tight text-highlighted">
+          Browse
+        </h2>
+        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <NuxtLink
+            v-for="tile in browseTiles"
+            :key="tile.to"
+            :to="tile.to"
+            class="group relative flex aspect-[16/9] flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br p-4 text-white shadow-card outline-none transition duration-300 ease-spring hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-(--ui-bg) active:scale-[0.98] sm:aspect-[2/1]"
+            :class="tile.tint"
+          >
+            <UIcon :name="tile.icon" class="size-7 opacity-90" />
+            <span class="flex flex-col">
+              <span class="text-[17px] font-semibold tracking-tight">{{ tile.label }}</span>
+              <span class="text-[13px] text-white/80">{{ tile.description }}</span>
+            </span>
+            <UIcon name="i-lucide-arrow-up-right" class="absolute top-4 right-4 size-5 opacity-0 transition group-hover:opacity-80" />
+          </NuxtLink>
+        </div>
       </section>
 
-      <div class="grid gap-4 md:grid-cols-2">
+      <div class="grid items-start gap-6 md:grid-cols-2">
         <HomeAccountCard :profile-name="activeProfile.name" />
 
-        <UCard v-if="guideIsEmpty" :ui="{ body: 'flex flex-col items-start gap-3' }">
-          <h2 class="flex items-center gap-2 font-semibold text-highlighted">
-            <UIcon name="i-lucide-calendar-x" class="size-4 text-muted" />
-            Your TV guide is empty
-          </h2>
-          <p class="text-sm text-muted">
-            Your provider doesn't publish programme listings. Add an XMLTV guide source to see what's on now and next
-            for your channels.
-          </p>
-          <UButton to="/settings" size="sm" variant="soft">
-            Set up the TV guide
-          </UButton>
-        </UCard>
+        <GroupedSection
+          v-if="guideIsEmpty"
+          title="TV Guide"
+          footer="Your provider doesn't publish programme listings. Add a guide source to see what's on now and next."
+        >
+          <GroupedRow
+            label="Set up the TV guide"
+            icon="i-lucide-calendar-x"
+            icon-class="bg-gradient-to-br from-amber-400 to-orange-500"
+            to="/settings"
+          />
+        </GroupedSection>
       </div>
     </div>
   </div>

@@ -1,3 +1,4 @@
+import type { SearchResults } from '#shared/types/search'
 import type { XtreamAccountInfo } from '#shared/types/profile'
 import type { LiveStream, SeriesDetails, SeriesSummary, VodDetails, VodStream, XtreamCategory } from '#shared/types/xtream'
 import { XtreamRequestError } from './client'
@@ -75,4 +76,18 @@ export async function fetchSeriesList(categoryId?: string): Promise<SeriesSummar
 export async function fetchSeriesDetails(seriesId: string): Promise<SeriesDetails> {
   const credentials = await getActiveCredentials()
   return wrapXtreamErrors(getSeriesInfo(credentials, seriesId))
+}
+
+export async function searchActiveCatalog(query: string): Promise<SearchResults> {
+  const profile = await getActiveProfileWithSecret()
+  if (!profile) {
+    throw createError({ statusCode: 400, statusMessage: 'No active IPTV profile. Add one in Profiles first.' })
+  }
+  return wrapXtreamErrors(searchCatalog(profile.id, await getActiveCredentials(), query))
+}
+
+/** Fire-and-forget: prepares the search index for the active profile. */
+export async function warmActiveSearchIndex(): Promise<void> {
+  const profile = await getActiveProfileWithSecret()
+  if (profile) warmSearchIndex(profile.id, await getActiveCredentials())
 }

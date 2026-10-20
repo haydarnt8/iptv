@@ -82,7 +82,7 @@ defineSlots<{ idle?: () => unknown }>()
       class="absolute inset-0 flex items-center justify-center"
       @click="$emit('togglePlay')"
     >
-      <span class="flex size-16 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70">
+      <span class="glass-video flex size-18 items-center justify-center rounded-full text-white transition duration-300 ease-spring hover:scale-105 active:scale-95">
         <UIcon name="i-lucide-play" class="size-8" />
       </span>
     </button>

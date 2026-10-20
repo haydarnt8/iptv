@@ -7,5 +7,6 @@ export default defineEventHandler(async (event) => {
   await deleteProfile(id)
   // Data that only made sense for this profile goes with it.
   await Promise.all([deleteLivePreferences(id), deleteGuideData(id)])
+  invalidateSearchIndex(id)
   return { ok: true }
 })

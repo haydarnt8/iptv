@@ -36,89 +36,120 @@ async function handleSetActive(id: string) {
   reloadNuxtApp()
 }
 
-async function handleDelete(id: string, name: string) {
-  if (!confirm(`Delete profile "${name}"? This can't be undone.`)) {
-    return
+// Deleting asks first, in an Apple-style alert.
+const deleteTarget = shallowRef<IptvProfileSummary | null>(null)
+const deleting = ref(false)
+const deleteOpen = computed({
+  get: () => deleteTarget.value !== null,
+  set: (open: boolean) => {
+    if (!open) deleteTarget.value = null
   }
-  const wasActive = profilesStore.activeProfile?.id === id
-  await profilesStore.deleteProfile(id)
-  if (wasActive) reloadNuxtApp()
+})
+
+async function confirmDelete() {
+  const target = deleteTarget.value
+  if (!target) return
+  deleting.value = true
+  try {
+    const wasActive = profilesStore.activeProfile?.id === target.id
+    await profilesStore.deleteProfile(target.id)
+    deleteTarget.value = null
+    if (wasActive) reloadNuxtApp()
+  } finally {
+    deleting.value = false
+  }
+}
+
+function hostOf(serverUrl: string): string {
+  try {
+    return new URL(serverUrl).host
+  } catch {
+    return serverUrl
+  }
+}
+
+function menuItems(profile: IptvProfileSummary) {
+  return [
+    { label: 'Edit', icon: 'i-lucide-pencil', onSelect: () => openEdit(profile) },
+    { label: 'Delete', icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => { deleteTarget.value = profile } }
+  ]
 }
 </script>
 
 <template>
-  <div class="flex flex-1 flex-col gap-4">
-    <div class="flex items-center justify-between">
-      <h1 class="text-lg font-semibold">
-        IPTV Profiles
-      </h1>
-      <UButton icon="i-lucide-plus" @click="openAdd">
-        Add profile
-      </UButton>
-    </div>
+  <div class="flex w-full max-w-3xl flex-1 flex-col gap-8">
+    <PageTitle title="Profiles">
+      <template #actions>
+        <UButton icon="i-lucide-plus" @click="openAdd">
+          Add Profile
+        </UButton>
+      </template>
+    </PageTitle>
 
-    <div v-if="loading" class="grid gap-3 sm:grid-cols-2">
-      <USkeleton v-for="i in 2" :key="i" class="h-28 w-full" />
+    <div v-if="loading && profiles.length === 0" class="flex flex-col gap-2">
+      <USkeleton class="h-4 w-24" />
+      <USkeleton class="h-32 w-full rounded-2xl" />
     </div>
 
     <EmptyState
       v-else-if="profiles.length === 0"
       icon="i-lucide-users"
-      title="No profiles yet"
+      title="No Profiles Yet"
       description="Add your Xtream-compatible IPTV subscription to get started."
-      action-label="Add a profile"
+      action-label="Add Profile"
       @action="openAdd"
     />
 
-    <div v-else class="grid gap-3 sm:grid-cols-2">
-      <UCard v-for="profile in profiles" :key="profile.id">
-        <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <span class="truncate font-medium">{{ profile.name }}</span>
-            <UBadge v-if="profile.isActive" color="primary" variant="subtle" size="sm">
+    <GroupedSection
+      v-else
+      footer="The active profile is used for Live TV, Movies, Series and the guide. Passwords are encrypted on this computer and never sent to the browser."
+    >
+      <div v-for="profile in profiles" :key="profile.id" class="flex items-center gap-3 px-4 py-3">
+        <span
+          class="flex size-10 shrink-0 items-center justify-center rounded-full text-[15px] font-semibold text-white"
+          :class="profile.isActive ? 'bg-gradient-to-br from-emerald-400 to-green-600' : 'bg-gradient-to-br from-zinc-400 to-zinc-600'"
+          aria-hidden="true"
+        >
+          {{ profile.name.slice(0, 1).toUpperCase() }}
+        </span>
+        <div class="min-w-0 flex-1">
+          <p class="flex items-center gap-2 text-[15px] text-highlighted">
+            <span class="truncate">{{ profile.name }}</span>
+            <UBadge v-if="profile.isActive" color="success" variant="soft" size="sm">
               Active
             </UBadge>
-          </div>
-          <p class="truncate text-sm text-muted">
-            {{ profile.serverUrl }}
           </p>
-          <p class="truncate text-sm text-muted">
-            {{ profile.username }}
+          <p class="truncate text-[13px] text-muted">
+            {{ hostOf(profile.serverUrl) }} · {{ profile.username }}
           </p>
         </div>
+        <UButton v-if="!profile.isActive" size="sm" variant="soft" color="neutral" @click="handleSetActive(profile.id)">
+          Use
+        </UButton>
+        <UDropdownMenu :items="menuItems(profile)" :content="{ align: 'end' }">
+          <UButton icon="i-lucide-ellipsis" size="sm" variant="ghost" color="neutral" :aria-label="`More actions for ${profile.name}`" />
+        </UDropdownMenu>
+      </div>
+    </GroupedSection>
 
-        <div class="mt-3 flex flex-wrap gap-2">
-          <UButton
-            v-if="!profile.isActive"
-            size="sm"
-            variant="soft"
-            @click="handleSetActive(profile.id)"
-          >
-            Set active
+    <ProfileFormModal v-model:open="modalOpen" :profile="editingProfile" @saved="onSaved" />
+
+    <UModal v-model:open="deleteOpen" :title="`Delete \u201C${deleteTarget?.name ?? ''}\u201D?`" :ui="{ content: 'max-w-sm' }">
+      <template #body>
+        <p class="text-[15px] text-muted">
+          Its favorites, history and guide settings are deleted too. This can't be undone.
+        </p>
+      </template>
+      <template #footer>
+        <div class="flex w-full gap-2">
+          <UButton block variant="soft" color="neutral" @click="deleteTarget = null">
+            Cancel
           </UButton>
-          <UButton
-            size="sm"
-            variant="ghost"
-            color="neutral"
-            icon="i-lucide-pencil"
-            :aria-label="`Edit ${profile.name}`"
-            @click="openEdit(profile)"
-          >
-            Edit
-          </UButton>
-          <UButton
-            size="sm"
-            variant="ghost"
-            color="error"
-            icon="i-lucide-trash-2"
-            @click="handleDelete(profile.id, profile.name)"
-          >
+          <UButton block color="error" :loading="deleting" @click="confirmDelete">
             Delete
           </UButton>
         </div>
-      </UCard>
-    </div>
-
-    <ProfileFormModal v-model:open="modalOpen" :profile="editingProfile" @saved="onSaved" />
+      </template>
+    </UModal>
   </div>
 </template>

@@ -1,7 +1,7 @@
 /**
- * Accent colours offered in Settings. Each one keeps WCAG AA contrast (≥ 4.5:1) for white text on
- * its 600 shade (light mode) and dark text on its 400 shade (dark mode). Greens, teals, sky,
- * amber and orange fail the light-mode check, so they're left out.
+ * Accent colours offered in Settings. Red and blue keep WCAG AA contrast (≥ 4.5:1) with white text
+ * on their 600 shade (light mode); yellow is light, so it gets dark text instead (`--ui-on-primary`
+ * and `--ui-primary-ink` in main.css). Dark mode uses the 400 shades with dark text.
  */
 export const ACCENT_COLORS = ['yellow', 'red', 'blue'] as const
 

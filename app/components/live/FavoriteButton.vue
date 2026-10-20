@@ -30,7 +30,7 @@ async function toggle() {
     class="flex size-9 shrink-0 items-center justify-center rounded-md transition focus-visible:outline-2 focus-visible:outline-primary"
     :class="appearance === 'overlay'
       ? 'text-white hover:bg-white/10'
-      : active ? 'text-primary hover:bg-elevated' : 'text-dimmed hover:bg-elevated hover:text-default'"
+      : active ? 'text-accent hover:bg-elevated' : 'text-dimmed hover:bg-elevated hover:text-default'"
     :aria-label="label"
     :aria-pressed="active"
     :title="label"

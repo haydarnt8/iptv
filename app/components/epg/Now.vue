@@ -26,7 +26,7 @@ watch(() => props.streamId, () => {
 </script>
 
 <template>
-  <section class="flex flex-col gap-2 rounded-lg border border-default bg-elevated/40 p-3" aria-label="Now playing">
+  <section class="flex flex-col gap-2 rounded-2xl bg-elevated p-4" aria-label="Now playing">
     <div class="flex items-center justify-between gap-3">
       <p class="flex min-w-0 items-center gap-2 text-sm">
         <span class="size-2 shrink-0 rounded-full bg-error" aria-hidden="true" />
@@ -70,7 +70,7 @@ watch(() => props.streamId, () => {
 
     <p v-if="!info" class="text-sm text-muted">
       No programme guide for this channel.
-      <ULink to="/settings" class="text-primary">
+      <ULink to="/settings" class="text-accent">
         Add guide sources
       </ULink>
     </p>

@@ -3,44 +3,36 @@ const { canPrompt, installed, install } = usePwaInstall()
 </script>
 
 <template>
-  <UCard>
-    <template #header>
-      <h2 class="font-semibold">
-        App
-      </h2>
-    </template>
-
-    <div class="flex items-start gap-3">
-      <img src="/icons/icon.svg" alt="" class="size-12 shrink-0 rounded-xl">
-      <div class="flex min-w-0 flex-1 flex-col items-start gap-2">
+  <GroupedSection
+    title="App"
+    footer="It installs on this computer only: the app is private to the computer running it, so phones and other devices can't open it."
+  >
+    <div class="flex items-center gap-3 px-4 py-3">
+      <img src="/icons/icon.svg" alt="" class="size-11 shrink-0 rounded-[10px] shadow-sm">
+      <div class="min-w-0 flex-1">
+        <p class="text-[15px] text-highlighted">
+          IPTV for this computer
+        </p>
         <!-- The install state is only known in the browser. -->
         <ClientOnly>
-          <template v-if="installed">
-            <p class="text-sm">
+          <p class="text-[13px] text-muted">
+            <template v-if="installed">
               You're using the installed app.
-            </p>
-          </template>
-          <template v-else>
-            <p class="text-sm">
-              Install IPTV to open it in its own window, from your Dock or Start menu, like a regular app.
-            </p>
-            <UButton v-if="canPrompt" icon="i-lucide-download" size="sm" @click="install">
-              Install app
-            </UButton>
-            <p v-else class="text-xs text-muted">
-              Chrome or Edge: use the install icon at the right of the address bar.
-              Safari on Mac: File → Add to Dock.
-            </p>
-          </template>
-          <template #fallback>
-            <USkeleton class="h-10 w-full" />
-          </template>
+            </template>
+            <template v-else-if="canPrompt">
+              Open it in its own window, from your Dock or Start menu.
+            </template>
+            <template v-else>
+              Chrome or Edge: the install icon in the address bar. Safari on Mac: File → Add to Dock.
+            </template>
+          </p>
         </ClientOnly>
-        <p class="text-xs text-muted">
-          It installs on this computer only: the app is private to the computer running it, so phones and other
-          devices can't open it.
-        </p>
       </div>
+      <ClientOnly>
+        <UButton v-if="!installed && canPrompt" icon="i-lucide-download" size="sm" @click="install">
+          Install
+        </UButton>
+      </ClientOnly>
     </div>
-  </UCard>
+  </GroupedSection>
 </template>

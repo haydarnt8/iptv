@@ -55,10 +55,10 @@ const buttonClass = 'text-white hover:bg-white/10'
 
 <template>
   <div
-    class="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 bg-gradient-to-t from-black/80 to-transparent px-3 pb-2 pt-6 transition-opacity duration-200"
-    :class="visible ? 'opacity-100' : 'pointer-events-none opacity-0'"
+    class="glass-video absolute inset-x-3 bottom-3 z-10 flex flex-col gap-1 rounded-2xl px-2 py-1.5 transition-[opacity,translate] duration-300 ease-spring"
+    :class="visible ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'"
   >
-    <div v-if="ready && !isLive && !casting" class="flex items-center gap-2">
+    <div v-if="ready && !isLive && !casting" class="flex items-center gap-2 px-1">
       <span class="w-14 shrink-0 text-right text-xs tabular-nums text-white/90">{{ formatPlaybackTime(seekValue) }}</span>
       <USlider
         v-model="seekValue"

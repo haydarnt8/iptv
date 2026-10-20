@@ -13,23 +13,23 @@ const epg = useEpgStore()
 
 <template>
   <section class="flex flex-col gap-3" :aria-label="title">
-    <div class="flex items-center justify-between gap-2">
-      <h2 class="text-base font-semibold text-highlighted">
+    <div class="flex items-baseline justify-between gap-2">
+      <h2 class="text-xl font-bold tracking-tight text-highlighted">
         {{ title }}
       </h2>
-      <UButton v-if="seeAllTo" :to="seeAllTo" size="xs" variant="ghost" color="neutral" trailing-icon="i-lucide-chevron-right">
-        See all
-      </UButton>
+      <NuxtLink v-if="seeAllTo" :to="seeAllTo" class="rounded text-[15px] text-accent outline-none hover:opacity-80 focus-visible:ring-2 focus-visible:ring-primary">
+        See All
+      </NuxtLink>
     </div>
-    <!-- Bleeds to the screen edge on phones so the next card peeks in, hinting at the scroll. -->
-    <div class="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:px-0 md:scroll-px-0">
+    <!-- Bleeds to the screen edge so the next card peeks in, hinting at the scroll. -->
+    <div class="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pt-1 pb-3 [scrollbar-width:none] md:-mx-6 md:scroll-px-6 md:px-6 lg:-mx-8 lg:scroll-px-8 lg:px-8">
       <LiveChannelCard
         v-for="channel in channels"
         :key="channel.streamId"
         :channel="channel"
         :guide="epg.nowNextFor(channel.streamId)"
         :now="now"
-        class="w-40 shrink-0 snap-start sm:w-48"
+        class="w-44 shrink-0 snap-start sm:w-56"
       />
     </div>
   </section>
