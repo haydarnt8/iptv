@@ -1,0 +1,32 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/*
+ * Theme overrides. Unlayered on purpose so they win over Nuxt UI's `@layer theme` defaults.
+ * Light mode uses the 600 shade of the accent so white text on solid buttons meets WCAG AA
+ * (the 500 default doesn't for warm accents like rose). Dark mode keeps Nuxt UI's 400 shade.
+ */
+:root {
+  --ui-primary: var(--ui-color-primary-600);
+}
+
+/* Near-black, neutral surfaces: cinema-style dark that keeps video and artwork the focus. */
+.dark {
+  color-scheme: dark;
+  --ui-primary: var(--ui-color-primary-400);
+  --ui-bg: var(--ui-color-neutral-950);
+  --ui-bg-muted: var(--ui-color-neutral-900);
+  --ui-bg-elevated: var(--ui-color-neutral-900);
+  --ui-bg-accented: var(--ui-color-neutral-800);
+  --ui-border: var(--ui-color-neutral-800);
+  --ui-border-muted: var(--ui-color-neutral-800);
+  --ui-border-accented: var(--ui-color-neutral-700);
+  --ui-text-inverted: var(--ui-color-neutral-950);
+}
